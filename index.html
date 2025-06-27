@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Strategy Advisor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .cards, .main-content, .content-section {
+      padding: 40px 20px;
+    }
+
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    form {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    input, select {
+      margin: 5px;
+      padding: 10px;
+      width: 250px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #333;
+      color: white;
+    }
+
+    .navbar {
+      background-color: #333;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      height: 60px;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      padding: 14px 20px;
+      font-size: 17px;
+      border-radius: 5px;
+    }
+
+    .navbar a:hover {
+      background-color: #ddd;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <a href="/">Home</a>
+    <a href="/sp500">Top S&P</a>
+  </div>
+
+  <div class="main-content">
+    <header class="text-center">
+      <center><h1 style="font-size: 2.5em; color: #333;">📈 Stock Strategy Advisor</h1></center>
+    </header>
+
+    <form method="POST">
+      <input type="text" name="symbol" value="{{ symbol }}" placeholder="e.g. AAPL, TSLA" required />
+      <button type="submit">Analyze</button>
+    </form>
+
+    {% if recommendation %}
+    <div class="card fade-in">
+      <center><h2 style="color: #2d6a4f;">🧠 Investment Strategy</h2></center>
+      <p>{{ recommendation }}</p>
+    </div>
+    {% endif %}
+
+    {% if price_history %}
+    <div class="card fade-in">
+      <canvas id="priceChart" height="100"></canvas>
+    </div>
+    {% endif %}
+
+    {% if stock_data %}
+    <div class="card fade-in">
+      <center><h2>📊 Stock Details for {{ stock_data.get('shortName', symbol) }}</h2></center>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          {% for key, value in stock_data.items() %}
+          <tr>
+            <td>{{ key }}</td>
+            <td>{{ value | default('N/A') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="card fade-in" style="color: red;">
+      {{ error }}
+    </div>
+    {% endif %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    {% if price_history %}
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    const priceChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ price_history.dates | safe }},
+        datasets: [{
+          label: 'Closing Price',
+          data: {{ price_history.prices | safe }},
+          borderColor: 'rgb(75, 192, 192)',
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            title: { display: true, text: 'Date' }
+          },
+          y: {
+            title: { display: true, text: 'Price (USD)' }
+          }
+        }
+      }
+    });
+    {% endif %}
+  </script>
+</body>
+</html>
