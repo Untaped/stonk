@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Strategy Advisor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+  <div class="flex flex-col md:flex-row min-h-screen">
+    
+    <!-- Sidebar -->
+    <aside class="w-full md:w-64 bg-gray-800 text-white p-6 shadow-md flex flex-col justify-between">
+      <div>
+        <h1 class="text-2xl font-bold mb-6">📈 Strategy Advisor</h1>
+        <nav class="space-y-4">
+          <a href="/" class="block py-2 px-3 rounded hover:bg-gray-700">🏠 Home</a>
+          <a href="/sp500" class="block py-2 px-3 rounded hover:bg-gray-700">📊 Top S&P</a>
+        </nav>
+      </div>
+      <p class="text-sm text-gray-400 mt-10 hidden md:block">&copy; 2025</p>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 space-y-10 overflow-y-auto">
+
+      <!-- Drawer: Search -->
+      <section class="bg-white rounded-xl shadow-md p-6">
+        <center><h2 class="text-xl font-semibold mb-4">🔍 Search a Stock Symbol</h2>
+        <form method="POST" class="space-y-4">
+          <input
+            type="text"
+            name="symbol"
+            value="{{ symbol }}"
+            placeholder="e.g. AAPL, TSLA"
+            required
+            class="border border-gray-300 rounded px-4 py-2 w-full md:w-64"
+          />
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+            Analyze
+          </button></center>
+        </form>
+      </section>
+
+      <!-- Drawer: Recommendation -->
+      {% if recommendation %}
+      <section class="bg-white rounded-xl shadow-md p-6 text-center text-green-600 text-lg font-semibold">
+        <p>{{ recommendation }}</p>
+      </section>
+      {% endif %}
+
+      <!-- Drawer: Graphs (Responsive Grid) -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% if growth_summary %}
+        <div class="bg-white rounded-xl shadow-md p-6">
+          <h2 class="text-xl font-semibold mb-4">📈 Projected Growth Summary</h2>
+          <canvas id="growthChart" height="300"></canvas>
+          <script>
+            const growthCtx = document.getElementById('growthChart').getContext('2d');
+            new Chart(growthCtx, {
+              type: 'bar',
+              data: {
+                labels: {{ (growth_summary.history.keys()|list + ['Projected']) | tojson }},
+                datasets: [{
+                  label: 'Annual % Growth',
+                  data: {{ (growth_summary.history.values()|list + [growth_summary.projected]) | tojson }},
+                  backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                  borderColor: 'rgba(59, 130, 246, 1)',
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Growth %' }
+                  }
+                }
+              }
+            });
+          </script>
+        </div>
+        {% endif %}
+
+        {% if price_history and price_history.dates %}
+        <div class="bg-white rounded-xl shadow-md p-6">
+          <h2 class="text-xl font-semibold mb-4">📉 Stock Price (Last 30 Days)</h2>
+          <canvas id="priceChart" height="300"></canvas>
+          <script>
+            const priceCtx = document.getElementById('priceChart').getContext('2d');
+            new Chart(priceCtx, {
+              type: 'line',
+              data: {
+                labels: {{ price_history.dates | tojson }},
+                datasets: [{
+                  label: '{{ symbol }} Closing Price',
+                  data: {{ price_history.prices | tojson }},
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                  fill: true,
+                  tension: 0.3,
+                  pointRadius: 2
+                }]
+              },
+              options: {
+                responsive: true,
+                scales: {
+                  x: { title: { display: true, text: 'Date' }},
+                  y: { title: { display: true, text: 'Price ($)' }, beginAtZero: false }
+                }
+              }
+            });
+          </script>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- Drawer: Stock Details -->
+      {% if stock_data %}
+      <section class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4">📋 Stock Details for {{ stock_data.get('shortName', symbol) }}</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead class="bg-gray-200">
+              <tr>
+                <th class="text-left py-2 px-4 border">Field</th>
+                <th class="text-left py-2 px-4 border">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for key, value in stock_data.items() %}
+              <tr class="hover:bg-gray-100">
+                <td class="py-2 px-4 border">{{ key }}</td>
+                <td class="py-2 px-4 border">{{ value | default('N/A') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- Drawer: Error -->
+      {% if error %}
+      <section class="bg-red-100 border border-red-300 text-red-700 p-4 rounded shadow-md">
+        <p>{{ error }}</p>
+      </section>
+      {% endif %}
+
+    </main>
+  </div>
+</body>
+</html>
